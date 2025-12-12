@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="es" class="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Línea de Tiempo - RD</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'] } } }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        .hide-scroll::-webkit-scrollbar {
+            height: 0px;
+            background: transparent;
+        }
+
+        .hide-scroll {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Animación del Mouse */
+        @keyframes scrollHint {
+            0% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(15px);
+                opacity: 0;
+            }
+        }
+
+        .animate-scroll-down {
+            animation: scrollHint 1.5s infinite;
+        }
+    </style>
+</head>
+
+<body
+    class="bg-gray-50 text-gray-800 dark:bg-slate-900 dark:text-gray-100 overflow-hidden h-screen flex flex-col relative">
+
+    <div id="scroll-indicator"
+        class="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm transition-opacity duration-700 pointer-events-none">
+        <div class="text-center max-w-md mx-4 animate-pulse">
+            <div
+                class="w-10 h-16 border-2 border-white/50 rounded-full flex justify-center mb-6 mx-auto relative shadow-[0_0_15px_rgba(255,255,255,0.3)]">
+                <div class="w-1.5 h-3 bg-white rounded-full mt-3 animate-scroll-down"></div>
+            </div>
+            <h3 class="font-black text-3xl text-white mb-2 tracking-tight">Navegación Horizontal</h3>
+            <p class="text-lg text-gray-300 font-medium">Usa la rueda del ratón hacia abajo <br> o desliza para viajar
+                en el tiempo.</p>
+        </div>
+    </div>
+
+    <header
+        class="w-full py-3 px-6 flex justify-between items-center bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 z-30 shrink-0 relative">
+        <div class="flex items-center gap-4">
+            <a href="index.html" class="text-xl font-black tracking-tighter hover:text-indigo-600 transition">EL
+                SIGLO.</a>
+            <span
+                class="px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-600 border border-red-200 uppercase tracking-widest">Historia
+                Dominicana</span>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <a href="international.html"
+                class="hidden md:flex items-center text-xs font-medium text-gray-500 hover:text-indigo-600 transition">
+                <span>Ver Mundo</span>
+                <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3">
+                    </path>
+                </svg>
+            </a>
+            <button onclick="toggleTheme()"
+                class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 transition">
+                <span id="theme-icon">🌙</span>
+            </button>
+        </div>
+    </header>
+
+    <nav
+        class="w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur border-b border-gray-200 dark:border-slate-800 z-20 shrink-0 overflow-x-auto hide-scroll relative">
+        <div class="flex justify-start md:justify-center px-4 py-3 space-x-1 min-w-max" id="decade-nav">
+        </div>
+    </nav>
+
+    <main id="scroll-container"
+        class="flex-1 relative overflow-x-auto overflow-y-hidden hide-scroll cursor-grab active:cursor-grabbing">
+        <div
+            class="absolute top-1/2 left-0 w-[5000px] h-0.5 bg-gray-300 dark:bg-slate-700 transform -translate-y-1/2 z-0">
+        </div>
+        <div class="flex items-center h-full px-12 gap-0 relative z-10" id="timeline-track">
+        </div>
+    </main>
+
+    <div id="modal"
+        class="fixed inset-0 z-[70] bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-300"
+        onclick="toggleModal(false)">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-lg w-full p-8 relative transform scale-95 transition-transform duration-300 border-t-4 border-red-500"
+            onclick="event.stopPropagation()">
+            <button onclick="toggleModal(false)"
+                class="absolute top-4 right-4 text-2xl text-gray-400 hover:text-red-500">&times;</button>
+            <span id="m-year"
+                class="text-5xl font-black text-gray-100 dark:text-slate-700 absolute top-4 right-12 -z-10"></span>
+            <span class="text-red-500 font-bold text-xs uppercase tracking-widest mb-1 block">Historia Dominicana</span>
+            <h2 id="m-title" class="text-2xl font-black mb-4 dark:text-white leading-tight"></h2>
+            <div class="h-48 bg-gray-100 dark:bg-slate-700 rounded mb-4 overflow-hidden">
+                <div class="w-full h-full flex items-center justify-center text-gray-400 text-sm italic">Imagen de
+                    Archivo</div>
+            </div>
+            <p id="m-desc" class="text-gray-600 dark:text-gray-300 leading-relaxed text-sm"></p>
+        </div>
+    </div>
+
+    <script src="datos-rd.js"></script>
+
+    <script>
+        // Variables principales
+        const track = document.getElementById('timeline-track');
+        const navDecades = document.getElementById('decade-nav');
+        const scrollContainer = document.getElementById("scroll-container");
+
+        // 1. RENDERIZAR BOTONES DÉCADAS
+        [1900, 1910, 1920, 1930, 1940, 1950, 1960, 1970, 1980, 1990].forEach(d => {
+            const btn = document.createElement('button');
+            btn.className = "px-4 py-1 rounded-full text-sm font-semibold text-gray-500 hover:bg-gray-100 hover:text-indigo-600 dark:text-gray-400 dark:hover:bg-slate-800 transition shrink-0";
+            btn.innerText = d + "s";
+            btn.onclick = () => scrollToDecade(d);
+            navDecades.appendChild(btn);
+        });
+
+        // 2. RENDERIZAR TIMELINE
+        function render() {
+            // Verificamos si los datos cargaron
+            if (typeof timelineData === 'undefined') {
+                console.error("Error: No se encontró 'timelineData'. Revisa que 'datos-rd.js' esté bien creado.");
+                track.innerHTML = "<p class='text-red-500 font-bold'>Error: Faltan los datos (datos-rd.js)</p>";
+                return;
+            }
+
+            let lastDecade = null;
+            timelineData.forEach((item) => {
+                // Marcador de Década
+                if (item.decade !== lastDecade) {
+                    track.innerHTML += `
+                        <div id="decade-${item.decade}" class="flex flex-col justify-center h-full mx-12 select-none relative group">
+                            <span class="text-[8rem] md:text-[10rem] font-black text-gray-100 dark:text-slate-800 transition group-hover:text-gray-200 dark:group-hover:text-slate-700 leading-none">
+                                ${item.decade}
+                            </span>
+                            <span class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-sm font-bold tracking-[0.5em] text-gray-400 uppercase rotate-90 md:rotate-0">
+                                Década
+                            </span>
+                        </div>`;
+                    lastDecade = item.decade;
+                }
+
+                // Posicionamiento Zig-Zag
+                const isUp = item.pos === 'up';
+                const alignment = isUp ? 'mb-48 md:mb-64 self-end' : 'mt-48 md:mt-64 self-start';
+                const lineStyle = isUp
+                    ? 'bottom-0 left-8 h-24 md:h-32 translate-y-full border-l-2 border-dashed border-gray-300 dark:border-slate-600'
+                    : 'top-0 left-8 h-24 md:h-32 -translate-y-full border-l-2 border-dashed border-gray-300 dark:border-slate-600';
+
+                // Tarjeta HTML
+                track.innerHTML += `
+                    <div class="relative flex-shrink-0 w-64 md:w-72 mx-4 group ${alignment}">
+                        <div class="absolute ${lineStyle}"></div>
+                        <div class="absolute ${isUp ? '-bottom-[106px] md:-bottom-[138px]' : '-top-[106px] md:-top-[138px]'} left-6 w-5 h-5 rounded-full bg-red-500 border-4 border-white dark:border-slate-900 z-10 shadow-md group-hover:scale-125 transition"></div>
+                        <div onclick="openModal('${item.year}', '${item.title}', '${item.desc}')" 
+                             class="bg-white dark:bg-slate-800 p-5 rounded-lg shadow-md border-t-4 border-red-500 hover:shadow-xl hover:-translate-y-1 transition cursor-pointer relative overflow-hidden">
+                            <div class="flex justify-between items-end mb-2">
+                                <span class="text-3xl font-black text-gray-200 dark:text-slate-700 leading-none">${item.year}</span>
+                                <span class="text-[10px] font-bold uppercase text-red-500 bg-red-50 dark:bg-slate-700 px-1.5 py-0.5 rounded">RD</span>
+                            </div>
+                            <h3 class="font-bold text-gray-800 dark:text-gray-100 leading-tight mb-2">${item.title}</h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-3">${item.desc}</p>
+                        </div>
+                    </div>`;
+            });
+            track.innerHTML += '<div class="w-64"></div>';
+        }
+
+        // 3. EVENTOS (Scroll, Modal, Tema)
+        scrollContainer.addEventListener("wheel", (evt) => {
+            evt.preventDefault();
+            scrollContainer.scrollLeft += evt.deltaY;
+            hideIndicator();
+        });
+        scrollContainer.addEventListener("touchmove", hideIndicator);
+
+        function hideIndicator() {
+            const indicator = document.getElementById('scroll-indicator');
+            if (indicator && indicator.style.opacity !== '0') {
+                indicator.style.opacity = '0';
+                setTimeout(() => indicator.remove(), 700);
+            }
+        }
+
+        function scrollToDecade(year) {
+            const target = document.getElementById(`decade-${year}`);
+            if (target) target.scrollIntoView({ behavior: 'smooth', inline: 'start' });
+        }
+
+        function openModal(year, title, desc) {
+            document.getElementById('m-year').innerText = year;
+            document.getElementById('m-title').innerText = title;
+            document.getElementById('m-desc').innerText = desc;
+            const modal = document.getElementById('modal');
+            modal.classList.remove('hidden');
+            setTimeout(() => { modal.classList.remove('opacity-0'); document.querySelector('#modal > div').classList.remove('scale-95'); }, 10);
+        }
+
+        function toggleModal(show) {
+            const modal = document.getElementById('modal');
+            if (!show) {
+                modal.classList.add('opacity-0');
+                setTimeout(() => modal.classList.add('hidden'), 300);
+            }
+        }
+
+        // Iniciar
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        }
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+            localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+        }
+
+        render();
+    </script>
+</body>
+
+</html>
